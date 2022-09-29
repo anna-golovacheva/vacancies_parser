@@ -1,4 +1,4 @@
-def upload_vacancies_hh(WebsiteClass: cls, VacancyClass: cls) -> list:
+def upload_vacancies_hh(WebsiteClass, VacancyClass) -> list:
     """
     Создает объекты класса HH. Создает на их основе объекты класса Vacancy,
     записывает их в файл и возвращает список словарей, в которых содержатся
