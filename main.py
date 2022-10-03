@@ -4,23 +4,32 @@ from classes import HH, Superjob, Vacancy
 
 def main():
     while True:
+        user_key = input('Привет! Введи ключевое слово на английском для поиска вакансий (например, python или java): >> ')
+        print(f'Ищем вакансии по ключевому слову "{user_key}" на сайтах HH и SuperJob. Нужно немного подождать.')
+        vacancy = Vacancy()
+        list_of_vacancies_hh = vacancy.get_data_hh(HH, user_key)
 
-        user_choice = input('Привет! Выбери действие и введи соответствующую цифру:\n1 - чтобы загрузить в файл 1000 вакансий по ключевому слову Python.\n2 - чтобы вывести топ вакансий по зарплатам.\n3 - чтобы закончить работу программы. >> ')
+        list_of_vacancies_to_upload = []
+        list_of_vacancies_to_analyze = []
+
+        list_up_hh, list_an_hh = make_lists_of_vacancies(list_of_vacancies_hh, vacancy)
+        list_of_vacancies_to_upload.extend(list_up_hh)
+        list_of_vacancies_to_analyze.extend(list_an_hh)
+
+        list_of_vacancies_sj = vacancy.get_data_sj(Superjob, user_key)
+        list_up_sj, list_an_sj = make_lists_of_vacancies(list_of_vacancies_sj, vacancy)
+        list_of_vacancies_to_upload.extend(list_up_sj)
+        list_of_vacancies_to_analyze.extend(list_an_sj)
+
+        print('Нашли!')
+
+        user_choice = input('Выбери действие и введи соответствующую цифру:\n1 - чтобы загрузить в файл 1000 вакансий по выбранному ключевому слову.\n2 - чтобы вывести топ вакансий по зарплатам.\n3 - чтобы завершить работу программы. >> ')
         if user_choice == '1':
-            print('Придется немного подождать, пока файл загрузится.')
-            vacancy_list_hh = upload_vacancies_hh(HH, Vacancy)
-            vacancy_list_sj = upload_vacancies_sj(Superjob, Vacancy)
-
-            print('Файл загружен')
+            upload_data_to_file(list_of_vacancies_to_upload)
 
         elif user_choice == '2':
-            user_num = int(input('Введите необходимое количество вакансий: >> '))
-            print('Сейчас сформируем список.')
-            vacancy_list_hh = upload_vacancies_hh(HH, Vacancy)
-            vacancy_list_sj = upload_vacancies_sj(Superjob, Vacancy)
-            all_vacancies_list = vacancy_list_hh + vacancy_list_sj
-
-            get_top(all_vacancies_list, user_num)
+            num = int(input('Введите необходимое число вакансий в списке: >> '))
+            get_top(list_of_vacancies_to_analyze, num)
 
         elif user_choice == '3':
             print('Пока!')

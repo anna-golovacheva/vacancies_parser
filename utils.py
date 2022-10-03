@@ -1,62 +1,25 @@
-def upload_vacancies_hh(WebsiteClass, VacancyClass) -> list:
+def make_lists_of_vacancies(list_of_raw_data: list, vac) -> tuple:
     """
-    Создает объекты класса HH. Создает на их основе объекты класса Vacancy,
-    записывает их в файл и возвращает список словарей, в которых содержатся
-    данные вакансий.
+    Устанавливает значения полей объектов класса Vacancy, формирует два списка:
+    для последующей загрузки данных по каждой вакансии в файл и для вывода
+    информации для пользователя.
     """
-    hh = WebsiteClass()
-    super_list = hh.get_request()
+    list_of_vacs_to_upload = []
+    list_of_vacs_to_analyze = []
+    for data in list_of_raw_data:
+        vac.set_data(data)
+        list_of_vacs_to_upload.append(vac.__repr__())
+        list_of_vacs_to_analyze.append(vac.get_vacancy())
 
-    vacancies_list_hh = []
+    return list_of_vacs_to_upload, list_of_vacs_to_analyze
 
+
+def upload_data_to_file(up_list: list) -> None:
     with open('data.txt', 'w', encoding='utf-8') as file:
+        for vac in up_list:
+            file.write(vac)
 
-        for i in range(917):
-            name_v = super_list[i]['name']
-            url_v = super_list[i]['alternate_url']
-            description_v_raw = f'{super_list[i]["snippet"]["requirement"] }' + f'{super_list[i]["snippet"]["responsibility"]}'
-            description_v_r = description_v_raw.replace('<highlighttext>Python</highlighttext>', '')
-            description_v = description_v_r.replace('<highlighttext>python</highlighttext>', '')
-            try:
-                salary_v = super_list[i]['salary']['from']
-            except:
-                salary_v = 'не указано'
-
-            vacancy = VacancyClass(name_v, url_v, description_v, salary_v)
-
-            vacancies_list_hh.append(vacancy.get_vacancy())
-
-            file.write(vacancy.__repr__())
-
-        return vacancies_list_hh
-
-
-def upload_vacancies_sj(WebsiteClass, VacancyClass) -> list:
-    """
-    Создает объекты класса SuperJob. Создает на их основе объекты класса Vacancy,
-    записывает их в файл и возвращает список словарей, в которых содержатся
-    данные вакансий.
-    """
-    sj = WebsiteClass()
-    list_of_everything = sj.get_request()
-
-    vacancies_list_sj = []
-
-    with open('data.txt', 'a', encoding='utf-8') as file:
-        for data in list_of_everything:
-            salary_v_r = data.contents[3].contents[0].contents[1].text
-            salary_v = salary_v_r.replace('\xa0', '')
-            name_v = data.contents[3].contents[0].contents[0].text
-            description_v = data.contents[5].text
-            url_v = 'https://russia.superjob.ru' + data.contents[3].contents[0].contents[0].contents[0].contents[0].contents[0].attrs['href']
-
-            vacancy = VacancyClass(name_v, url_v, description_v, salary_v)
-
-            vacancies_list_sj.append(vacancy.get_vacancy())
-
-            file.write(vacancy.__repr__())
-
-        return vacancies_list_sj
+        print('Вакансии загружены в файл.')
 
 
 def get_top(vac_list: list, num: int) -> None:
