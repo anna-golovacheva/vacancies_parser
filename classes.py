@@ -91,11 +91,8 @@ class Vacancy:
 
         return list_for_vacancies
 
-    def set_data(self, list_of_params: list, hh=True) -> None:
-        if hh:
-            self.name, self.url, self.description, self.salary = list_of_params[0], list_of_params[1], list_of_params[2], list_of_params[3]
-        else:
-            self.name, self.url, self.description, self.salary = list_of_params[0], list_of_params[1], list_of_params[2], list_of_params[3]
+    def set_data(self, list_of_params: list) -> None:
+        self.name, self.url, self.description, self.salary = list_of_params[0], list_of_params[1], list_of_params[2], list_of_params[3]
 
     def _refactor_salary(self) -> int:
         """
