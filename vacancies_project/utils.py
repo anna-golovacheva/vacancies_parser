@@ -15,7 +15,7 @@ def make_lists_of_vacancies(list_of_raw_data: list, vac) -> tuple:
 
 
 def upload_data_to_file(up_list: list) -> None:
-    with open('data.txt', 'w', encoding='utf-8') as file:
+    with open('../data.txt', 'w', encoding='utf-8') as file:
         for vac in up_list:
             file.write(vac)
 

@@ -1,5 +1,5 @@
 from utils import *
-from classes import HH, Superjob, Vacancy
+from vacancies_project.classes import HH, Superjob, Vacancy
 
 
 def main():

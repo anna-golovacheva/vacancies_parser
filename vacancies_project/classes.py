@@ -16,21 +16,36 @@ class Engine(ABC):
 
 
 class HH(Engine):
+    def __init__(self):
+        self.response_list = []
+        self.max_range = 0
     def get_request(self, key: str) -> list:
         """
         Выгружает данные обо всех подходящих вакансиях с сайта HeadHunter.
         """
         key = key.capitalize()
-        response_list = []
-        ua = fake_useragent.UserAgent()
 
-        for i in range(46):
-            url = 'https://api.hh.ru/vacancies'
-            par = {'page': i, 'per_page': '20', 'text': key, 'area': '113', 'user-agent': ua.random}
+        # ua = fake_useragent.UserAgent()
+        url = 'https://api.hh.ru/vacancies'
+        total_num_response = requests.get(url, {'text': key, 'area': 113})
+        total_num = total_num_response.json()['found']
+        per_page = 100
+        if total_num < 500:
+            self.max_range = total_num // per_page + 1
+        else:
+            self.max_range = 9
+        for i in range(self.max_range):
+            par = {'page': i, 'per_page': per_page, 'text': key, 'area': '113'}
             response = requests.get(url, params=par)
-            response_list += response.json()['items']
+            self.response_list += response.json()['items']
 
-        return response_list
+        return self.response_list
+
+    def __len__(self):
+        return len(self.response_list)
+
+
+    # 'user-agent': ua.random
 
 
 class Superjob(Engine):
@@ -44,11 +59,16 @@ class Superjob(Engine):
         for i in range(1, 4):
             page = i
             url = f'https://russia.superjob.ru/vacancy/search/?keywords={key}&page={page}'
+
             response = requests.get(url)
             response_text = response.text
+
             soup = BeautifulSoup(response_text, 'lxml')
-            soup_items = soup.find_all('div', class_='_2lp1U _2J-3z _3B5DQ')
+            soup_items = soup.find_all('div', class_='f-test-search-result-item')
+
             raw_items_list += soup_items
+
+        print(len(raw_items_list))
 
         return raw_items_list
 
@@ -64,7 +84,7 @@ class Vacancy:
         hh = WebsiteClass()
         super_list = hh.get_request(key)
         list_for_vacancies = []
-        for i in range(917):
+        for i in range(len(hh)):
             name_v = super_list[i]['name']
             url_v = super_list[i]['alternate_url']
             description_v_raw = f'{super_list[i]["snippet"]["requirement"] }' + f'{super_list[i]["snippet"]["responsibility"]}'
@@ -80,14 +100,36 @@ class Vacancy:
     def get_data_sj(self, WebsiteClass, key: str) -> list:
         sj = WebsiteClass()
         list_of_everything = sj.get_request(key)
+
         list_for_vacancies = []
         for data in list_of_everything:
-            salary_v_r = data.contents[3].contents[0].contents[1].text
-            salary_v = salary_v_r.replace('\xa0', '')
-            name_v = data.contents[3].contents[0].contents[0].text
-            description_v = data.contents[5].text
-            url_v = 'https://russia.superjob.ru' + data.contents[3].contents[0].contents[0].contents[0].contents[0].contents[0].attrs['href']
-            list_for_vacancies.append([name_v, url_v, description_v, salary_v])
+            basic_path_url = ''
+            basic_path_others = ''
+            salary_v_r = ''
+            is_ad = False
+            try:
+                basic_path_description = data.contents[0].contents[0].contents[0].contents[0]
+                basic_path_others = basic_path_description.contents[0].contents[0].contents[1].contents[0].contents[0]
+                salary_v_r = basic_path_others.contents[1].text
+
+            except IndexError:
+                try:
+                    basic_path_description = data.contents[1].contents[0].contents[0].contents[0]
+                    basic_path_others = basic_path_description.contents[0].contents[0].contents[1].contents[0].contents[0]
+                    salary_v_r = basic_path_others.contents[1].text
+                except (IndexError, AttributeError) as e:
+                    print('Пропускаю рекламу...')
+                    is_ad = True
+
+            finally:
+                if is_ad:
+                    continue
+
+                salary_v = salary_v_r.replace('\xa0', '')
+                name_v = basic_path_others.contents[0].text
+                description_v = basic_path_description.contents[2].text
+                url_v = 'https://russia.superjob.ru' + basic_path_others.contents[0].contents[0].contents[0].contents[0].attrs['href']
+                list_for_vacancies.append([name_v, url_v, description_v, salary_v])
 
         return list_for_vacancies
 
