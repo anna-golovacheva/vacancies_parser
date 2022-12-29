@@ -22,7 +22,7 @@ def upload_data_to_file(up_list: list) -> None:
         print('Вакансии загружены в файл.')
 
 
-def get_top(vac_list: list, num: int) -> None:
+def get_ttop(vac_list: list, num: int) -> None:
     """
     Сортирует список всех вакансий по убыванию зарплаты. Выводит заданное число
     самых высокооплачиваемых вакансий.
@@ -31,3 +31,13 @@ def get_top(vac_list: list, num: int) -> None:
     for t in top[:num]:
         for k, v in t.items():
             print(f'{k}: {v}')
+
+
+def sorting(vacancies):
+    """ Должен сортировать любой список вакансий по ежемесячной оплате (gt, lt magic methods) """
+    pass
+
+
+def get_top(vacancies, top_count):
+    """ Должен возвращать {top_count} записей из вакансий по зарплате (iter, next magic methods) """
+    pass

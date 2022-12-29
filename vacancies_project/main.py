@@ -29,7 +29,7 @@ def main():
 
         elif user_choice == '2':
             num = int(input('Введите необходимое число вакансий в списке: >> '))
-            get_top(list_of_vacancies_to_analyze, num)
+            get_ttop(list_of_vacancies_to_analyze, num)
 
         elif user_choice == '3':
             print('Пока!')
