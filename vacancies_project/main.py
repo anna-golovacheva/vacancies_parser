@@ -1,25 +1,21 @@
 from utils import *
-from vacancies_project.classes import HH, Superjob, Vacancy
+from vacancies_project.classes import HH, SJVacancy, Vacancy, HHVacancy
 
 
 def main():
     while True:
         user_key = input('Привет! Введи ключевое слово на английском для поиска вакансий (например, python или java): >> ')
         print(f'Ищем вакансии по ключевому слову "{user_key}" на сайтах HH и SuperJob. Нужно немного подождать.')
-        vacancy = Vacancy()
-        list_of_vacancies_hh = vacancy.get_data_hh(HH, user_key)
 
-        list_of_vacancies_to_upload = []
-        list_of_vacancies_to_analyze = []
+        hh_vac = HHVacancy(None, None, None, None)
+        file_1 = hh_vac.get_data(user_key)
+        dff = hh_vac.get_count_of_vacancy
 
-        list_up_hh, list_an_hh = make_lists_of_vacancies(list_of_vacancies_hh, vacancy)
-        list_of_vacancies_to_upload.extend(list_up_hh)
-        list_of_vacancies_to_analyze.extend(list_an_hh)
+        sj_vac = SJVacancy(None, None, None, None)
+        file_2 = sj_vac.get_data(user_key)
 
-        list_of_vacancies_sj = vacancy.get_data_sj(Superjob, user_key)
-        list_up_sj, list_an_sj = make_lists_of_vacancies(list_of_vacancies_sj, vacancy)
-        list_of_vacancies_to_upload.extend(list_up_sj)
-        list_of_vacancies_to_analyze.extend(list_an_sj)
+        upload_data_to_file(file_1, file_2)
+
 
         print('Нашли!')
 

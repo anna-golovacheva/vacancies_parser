@@ -1,25 +1,40 @@
-def make_lists_of_vacancies(list_of_raw_data: list, vac) -> tuple:
+import json
+import re
+import pandas as pd
+from vacancies_project.classes import Connector
+
+
+def refactor_salary(s) -> int:
     """
-    Устанавливает значения полей объектов класса Vacancy, формирует два списка:
-    для последующей загрузки данных по каждой вакансии в файл и для вывода
-    информации для пользователя.
+    Приводит данные о зарплате к одному виду - числовому представалению.
     """
-    list_of_vacs_to_upload = []
-    list_of_vacs_to_analyze = []
-    for data in list_of_raw_data:
-        vac.set_data(data)
-        list_of_vacs_to_upload.append(vac.__repr__())
-        list_of_vacs_to_analyze.append(vac.get_vacancy())
+    money = s
+    if type(money) is int:
+        return money
+    elif type(
+            money) is str and 'По договорённости' not in money and 'не указано' not in money and 'None' not in money:
+        regexp = re.compile(r'(^\d{4,6})|[а-я]{2}(\d{4,6})')
+        m = regexp.match(money)
+        if m.group(1):
+            return int(m.group(1))
+        elif m.group(2):
+            return int(m.group(2))
+    else:
+        return 0
 
-    return list_of_vacs_to_upload, list_of_vacs_to_analyze
+
+def create_data_frame(file):
+    df = pd.read_json(file)
+    df['refactored_salary'] = df['salary'].apply(refactor_salary)
+    return df
 
 
-def upload_data_to_file(up_list: list) -> None:
-    with open('../data.txt', 'w', encoding='utf-8') as file:
-        for vac in up_list:
-            file.write(vac)
+def upload_data_to_file(file_list_1, file_list_2) -> None:
+    df_1, df_2 = create_data_frame(file_list_1), create_data_frame(file_list_2)
+    data_frame = pd.concat([df_1, df_2], ignore_index=True)
+    data_frame.to_json('../data/raw_data.json', force_ascii=False)
 
-        print('Вакансии загружены в файл.')
+    print('Вакансии загружены в файл.')
 
 
 def get_ttop(vac_list: list, num: int) -> None:
