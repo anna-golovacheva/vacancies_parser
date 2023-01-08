@@ -1,9 +1,10 @@
 import json
+import os.path
 import re
 import pandas as pd
 from vacancies_project.classes import Connector
 
-
+FILE_PATH = '../data/all_data.json'
 def refactor_salary(s) -> int:
     """
     Приводит данные о зарплате к одному виду - числовому представалению.
@@ -32,27 +33,27 @@ def create_data_frame(file):
 def upload_data_to_file(file_list_1, file_list_2) -> None:
     df_1, df_2 = create_data_frame(file_list_1), create_data_frame(file_list_2)
     data_frame = pd.concat([df_1, df_2], ignore_index=True)
-    data_frame.to_json('../data/raw_data.json', force_ascii=False)
-
-    print('Вакансии загружены в файл.')
-
-
-def get_ttop(vac_list: list, num: int) -> None:
-    """
-    Сортирует список всех вакансий по убыванию зарплаты. Выводит заданное число
-    самых высокооплачиваемых вакансий.
-    """
-    top = sorted(vac_list, key=lambda item: item['Заработная плата'], reverse=True)
-    for t in top[:num]:
-        for k, v in t.items():
-            print(f'{k}: {v}')
+    if os.path.isfile(FILE_PATH):
+        os.remove(FILE_PATH)
+    data_frame.to_json(FILE_PATH, force_ascii=False)
 
 
-def sorting(vacancies):
+def upload_1000():
+    file_path_1000 = '../data/1000_data.json'
+    df = pd.read_json(FILE_PATH)
+    df.iloc[:1000].to_json(file_path_1000, force_ascii=False)
+    print(f'Вакансии загружены в файл {file_path_1000}.')
+
+
+def sorting():
     """ Должен сортировать любой список вакансий по ежемесячной оплате (gt, lt magic methods) """
-    pass
+    df = pd.read_json(FILE_PATH)
+    df.sort_values(by=['refactored_salary'], ascending=False, inplace=True)
+    return df
 
 
-def get_top(vacancies, top_count):
+def get_top(vacancies_df, top_count):
     """ Должен возвращать {top_count} записей из вакансий по зарплате (iter, next magic methods) """
-    pass
+    top_path = f'../data/salary_top_{top_count}'
+    vacancies_df.iloc[:top_count].to_json(top_path, force_ascii=False)
+    print(f'Топ вакансий загружен в файл {top_path}.')

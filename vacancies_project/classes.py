@@ -34,10 +34,11 @@ class HH(Engine):
         total_num_response = requests.get(url, {'text': key, 'area': 113})
         total_num = total_num_response.json()['found']
         per_page = 100
-        if total_num < 500:
+        if total_num <= 1000:
             self.max_range = total_num // per_page + 1
         else:
-            self.max_range = 9
+            self.max_range = 11
+
         for i in range(self.max_range):
             par = {'page': i, 'per_page': per_page, 'text': key, 'area': '113'}
             response = requests.get(url, params=par)
