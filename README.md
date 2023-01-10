@@ -7,3 +7,5 @@ Programm has options:
 + to specify searches by extra key words in the name or description of a vacancy or to look for vacancies with the exact salary
 
 All data returns to a user in JSON files.
+
+P.S.: dev_1 branch is realised with pandas
