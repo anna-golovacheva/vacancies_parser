@@ -7,11 +7,8 @@ def main():
         user_key = input('Привет! Введите ключевое слово на английском языке для поиска вакансий (например, python или java): >> ')
         print(f'Ищем вакансии по ключевому слову "{user_key}" на сайтах HH и SuperJob. Нужно немного подождать.')
 
-        hh_vac = HHVacancy(None, None, None, None)
-        file_1 = hh_vac.get_data(user_key)
-
-        sj_vac = SJVacancy(None, None, None, None)
-        file_2 = sj_vac.get_data(user_key)
+        file_1 = collect_data(HHVacancy, user_key)
+        file_2 = collect_data(SJVacancy, user_key)
 
         upload_data_to_file(file_1, file_2)
 
