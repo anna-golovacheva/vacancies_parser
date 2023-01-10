@@ -147,11 +147,10 @@ class Vacancy:
         Возвращает строку, содержащую данные о вакансии.
         """
 
-        return f'Позиция: {self.__name}:\nОписание: {self.__description}\nЗаработная плата от: {self.__salary}\nСсылка на вакансию: {self.__url}\n\n'
+        return f'Позиция: {self.__name}:\nОписание: {self.__description}\nЗаработная плата от: {self.__refactored_salary}\nСсылка на вакансию: {self.__url}\n\n'
 
 
 class CountMixin:
-
     @property
     def get_count_of_vacancy(self):
         """

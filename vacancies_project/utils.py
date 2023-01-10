@@ -1,31 +1,29 @@
-import json
-import os.path
 from vacancies_project.classes import Connector, Vacancy
 
-FILE_PATH = '../data/all_data.json'
 
-
-def collect_data(vacancy_class, key):
+def collect_data(vacancy_class, key) -> str:
+    """
+    Функция позволяет получить данные с одного сайта.
+    """
     vacancy = vacancy_class(None, None, None, None)
     file = vacancy.get_data(key)
     return file
 
 
-def get_data_from_little_file(file):
+def get_data_from_little_file(file) -> list:
+    """
+    Функция позволяет получить данные из одного файла.
+    """
     connector = Connector(file)
     data_from_file = connector.select(None)
     return data_from_file
 
 
-def check_file(file):
-    file_path = '../data/' + file
-    if os.path.isfile(file_path):
-        os.remove(file_path)
-
-
-def upload_data_to_file(file_list_1, file_list_2):
+def upload_data_to_file(file_list_1, file_list_2) -> str:
+    """
+    Функция позволяет загрузить данные в общий файл.
+    """
     all_data_file = 'all_data.json'
-    check_file(all_data_file)
 
     all_data = []
     for file in (file_list_1, file_list_2):
@@ -37,7 +35,10 @@ def upload_data_to_file(file_list_1, file_list_2):
     return connector.data_file
 
 
-def upload_1000(file):
+def upload_1000(file) -> str:
+    """
+    Функция позволяет загрузить в отдельный файл 1000 вакансий из общего файла.
+    """
     file_1000 = '1000_data.json'
 
     connector_1 = Connector(file)
@@ -49,7 +50,7 @@ def upload_1000(file):
     return f'Информация о 1000 вакансий по запросу загружена в файл {connector_2.data_file}'
 
 
-def sorting(file):
+def sorting(file) -> str:
     """ Должен сортировать любой список вакансий по ежемесячной оплате
     (gt, lt magic methods) """
     sorted_file = 'sorted_data.json'
@@ -68,6 +69,7 @@ def sorting(file):
         vacancies_list.append(vacancy)
 
     sorted_vacancies = sorted(vacancies_list, reverse=True)
+
     data_for_file = []
     for vac in sorted_vacancies:
         vac_dict = {
@@ -84,9 +86,9 @@ def sorting(file):
     return connector_2.data_file
 
 
-def get_top(file, top_count):
-    """ Должен возвращать {top_count} записей из вакансий по зарплате
-    (iter, next magic methods) """
+def get_top(file, top_count) -> str:
+    """ Функция записывает {top_count} записей из всех вакансий,
+    отсортированных по зарплате """
     salary_top_file = f'salary_top_{top_count}'
 
     connector_1 = Connector(file)
@@ -99,7 +101,10 @@ def get_top(file, top_count):
     return f'Информация о {top_count} самых высокооплачиваемых вакансиях загружена в файл {connector_2.data_file}'
 
 
-def select_data_from_all_data(file, query_dict, strong=True):
+def select_data_from_all_data(file, query_dict, strong=True) -> str:
+    """
+    Функция позволяет уточнить запрос, записывает в файл подходящие вакансии.
+    """
     key, value = list(query_dict.items())[0]
     selected_data_file = f'selected_{key}_{value}.json'
     connector_1 = Connector(file)
