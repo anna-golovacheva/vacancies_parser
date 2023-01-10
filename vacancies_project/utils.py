@@ -1,8 +1,6 @@
 import json
 import os.path
-import re
-import pandas as pd
-from vacancies_project.classes import Connector
+from vacancies_project.classes import Connector, Vacancy
 
 FILE_PATH = '../data/all_data.json'
 
@@ -13,55 +11,102 @@ def collect_data(vacancy_class, key):
     return file
 
 
-def refactor_salary(s) -> int:
-    """
-    Приводит данные о зарплате к одному виду - числовому представалению.
-    """
-    money = s
-    if type(money) is int:
-        return money
-    elif type(
-            money) is str and 'По договорённости' not in money and 'не указано' not in money and 'None' not in money:
-        regexp = re.compile(r'(^\d{4,6})|[а-я]{2}(\d{4,6})')
-        m = regexp.match(money)
-        if m.group(1):
-            return int(m.group(1))
-        elif m.group(2):
-            return int(m.group(2))
-    else:
-        return 0
+def get_data_from_little_file(file):
+    connector = Connector(file)
+    data_from_file = connector.select(None)
+    return data_from_file
 
 
-def create_data_frame(file):
-    df = pd.read_json(file)
-    df['refactored_salary'] = df['salary'].apply(refactor_salary)
-    return df
+def check_file(file):
+    file_path = '../data/' + file
+    if os.path.isfile(file_path):
+        os.remove(file_path)
 
 
-def upload_data_to_file(file_list_1, file_list_2) -> None:
-    df_1, df_2 = create_data_frame(file_list_1), create_data_frame(file_list_2)
-    data_frame = pd.concat([df_1, df_2], ignore_index=True)
-    if os.path.isfile(FILE_PATH):
-        os.remove(FILE_PATH)
-    data_frame.to_json(FILE_PATH, force_ascii=False)
+def upload_data_to_file(file_list_1, file_list_2):
+    all_data_file = 'all_data.json'
+    check_file(all_data_file)
+
+    all_data = []
+    for file in (file_list_1, file_list_2):
+        data = get_data_from_little_file(file)
+        all_data += data
+    connector = Connector(all_data_file)
+    connector.insert(all_data)
+
+    return connector.data_file
 
 
-def upload_1000():
-    file_path_1000 = '../data/1000_data.json'
-    df = pd.read_json(FILE_PATH)
-    df.iloc[:1000].to_json(file_path_1000, force_ascii=False)
-    print(f'Вакансии загружены в файл {file_path_1000}.')
+def upload_1000(file):
+    file_1000 = '1000_data.json'
+
+    connector_1 = Connector(file)
+    extracted_data = connector_1.select(None)[:1000]
+
+    connector_2 = Connector(file_1000)
+    connector_2.insert(extracted_data)
+
+    return f'Информация о 1000 вакансий по запросу загружена в файл {connector_2.data_file}'
 
 
-def sorting():
-    """ Должен сортировать любой список вакансий по ежемесячной оплате (gt, lt magic methods) """
-    df = pd.read_json(FILE_PATH)
-    df.sort_values(by=['refactored_salary'], ascending=False, inplace=True)
-    return df
+def sorting(file):
+    """ Должен сортировать любой список вакансий по ежемесячной оплате
+    (gt, lt magic methods) """
+    sorted_file = 'sorted_data.json'
+
+    connector_1 = Connector(file)
+    data_to_sort = connector_1.select(None)
+    vacancies_list = []
+    for vac in data_to_sort:
+        name = vac['name']
+        url = vac['url']
+        description = vac['description']
+        salary = vac['salary']
+        vacancy = Vacancy(name, url, description, salary)
+        vacancy.refactor_salary()
+
+        vacancies_list.append(vacancy)
+
+    sorted_vacancies = sorted(vacancies_list, reverse=True)
+    data_for_file = []
+    for vac in sorted_vacancies:
+        vac_dict = {
+            'name': vac.name,
+            'url': vac.url,
+            'description': vac.description,
+            'salary': vac.salary}
+        data_for_file.append(vac_dict)
+
+    connector_2 = Connector(sorted_file)
+    connector_2.insert(data_for_file)
+
+    print(f'Информация о 1000 вакансий по запросу загружена в файл {connector_2.data_file}')
+    return connector_2.data_file
 
 
-def get_top(vacancies_df, top_count):
-    """ Должен возвращать {top_count} записей из вакансий по зарплате (iter, next magic methods) """
-    top_path = f'../data/salary_top_{top_count}'
-    vacancies_df.iloc[:top_count].to_json(top_path, force_ascii=False)
-    print(f'Топ вакансий загружен в файл {top_path}.')
+def get_top(file, top_count):
+    """ Должен возвращать {top_count} записей из вакансий по зарплате
+    (iter, next magic methods) """
+    salary_top_file = f'salary_top_{top_count}'
+
+    connector_1 = Connector(file)
+    sorted_data = connector_1.select(None)
+    top_data = sorted_data[:top_count]
+
+    connector_2 = Connector(salary_top_file)
+    connector_2.insert(top_data)
+
+    return f'Информация о {top_count} самых высокооплачиваемых вакансиях загружена в файл {connector_2.data_file}'
+
+
+def select_data_from_all_data(file, query_dict, strong=True):
+    key, value = list(query_dict.items())[0]
+    selected_data_file = f'selected_{key}_{value}.json'
+    connector_1 = Connector(file)
+    selected_data = connector_1.select(query_dict, strong)
+
+    connector_2 = Connector(selected_data_file)
+    connector_2.insert(selected_data)
+
+    return f'Информация о вакансиях по запросу {key} - {value} загружена в файл {connector_2.data_file}'
+

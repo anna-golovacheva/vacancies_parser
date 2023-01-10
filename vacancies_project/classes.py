@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
 import os
+import re
 
 
 class Engine(ABC):
@@ -72,13 +73,14 @@ class SuperJob(Engine):
 
 
 class Vacancy:
-    __slots__ = ('__name', '__url', '__description', '__salary')
+    __slots__ = ('__name', '__url', '__description', '__salary', '__refactored_salary')
 
     def __init__(self, name, url, description, salary):
         self.__name = name
         self.__url = url
         self.__description = description
         self.__salary = salary
+        self.__refactored_salary = 0
 
     @property
     def name(self):
@@ -111,6 +113,34 @@ class Vacancy:
     @salary.setter
     def salary(self, value):
         self.__salary = value
+
+    def refactor_salary(self):
+        """
+        Приводит данные о зарплате к одному виду - числовому представлению.
+        """
+        money = self.__salary
+        if isinstance(money, int):
+            self.__refactored_salary = self.__salary
+
+        elif isinstance(money, str) and all(word not in money for word in ['По договорённости', 'не указано', 'None']):
+            regexp = re.compile(r'(^\d{4,6})|[а-я]{2}(\d{4,6})')
+            m = regexp.match(money)
+            if m.group(1):
+                self.__refactored_salary = int(m.group(1))
+            elif m.group(2):
+                self.__refactored_salary = int(m.group(2))
+
+    def __lt__(self, other):
+        return self.__refactored_salary < other
+
+    def __gt__(self, other):
+        return self.__refactored_salary > other
+
+    def __eq__(self, other):
+        return self.__refactored_salary == other
+
+    def __ne__(self, other):
+        return self.__refactored_salary != other
 
     def __repr__(self) -> str:
         """
@@ -254,21 +284,21 @@ class Connector:
             try:
                 with open(self.__data_file, encoding='utf-8') as file:
                     value_from_file = json.load(file)[0]['name']
-                assert value_from_file
-            except AssertionError:
-                raise AssertionError('файл поврежден')
+                capitalized_check = value_from_file.capitalize()
+            except AttributeError:
+                raise AttributeError('файл поврежден')
         else:
             new_file = open(self.__data_file, 'x')
             new_file.close()
 
-    def insert(self, data, add='w'):
+    def insert(self, data):
         """
         Запись данных в файл с сохранением структуры и исходных данных
         """
-        with open(self.__data_file, add, encoding='utf-8') as file:
+        with open(self.__data_file, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False)
 
-    def select(self, query):
+    def select(self, query, strong=True):
         """
         Выбор данных из файла с применением фильтрации
         query содержит словарь, в котором ключ - это поле для
@@ -276,12 +306,28 @@ class Connector:
         {'price': 1000}, должно отфильтровать данные по полю price
         и вернуть все строки, в которых цена 1000
         """
-        pass
+        with open(self.__data_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        if query:
+            key, value = list(query.items())[0]
+            if strong:
+                selected_data = [data_item for data_item in data if data_item[key] == value]
+            else:
+                selected_data = [data_item for data_item in data if value in data_item[key]]
+            return selected_data
+        return data
 
     def delete(self, query):
         """
-        Удаление записей из файла, которые соответствуют запрос,
+        Удаление записей из файла, которые соответствуют запросу,
         как в методе select. Если в query передан пустой словарь, то
         функция удаления не сработает
         """
-        pass
+        if query:
+            with open(self.__data_file, 'r', encoding='utf-8') as file_r:
+                data = json.load(file_r)
+
+            key, value = query.items()[0]
+            saved_data = [data_item for data_item in data if data_item[key] != value]
+            with open(self.__data_file, 'w', encoding='utf-8') as file_w:
+                json.dump(saved_data, file_w)
