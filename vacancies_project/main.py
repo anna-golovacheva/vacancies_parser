@@ -1,5 +1,5 @@
 from utils import *
-from vacancies_project.classes import HH, SJVacancy, Vacancy, HHVacancy
+from vacancies_project.classes import SJVacancy, HHVacancy
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
             break
 
         else:
-            print('Кажется, ты ввел что-то другое. Попробуй еще раз.')
+            print('Кажется, вы ввели что-то другое. Попробуйте еще раз.')
 
 
 if __name__ == '__main__':

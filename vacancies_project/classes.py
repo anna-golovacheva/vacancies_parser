@@ -1,5 +1,4 @@
 import json
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from abc import ABC, abstractmethod
@@ -28,9 +27,8 @@ class HH(Engine):
         Выгружает данные обо всех подходящих вакансиях с сайта HeadHunter.
         """
         key = key.capitalize()
-
-        # ua = fake_useragent.UserAgent()
         url = 'https://api.hh.ru/vacancies'
+
         total_num_response = requests.get(url, {'text': key, 'area': 113})
         total_num = total_num_response.json()['found']
         per_page = 100
@@ -48,7 +46,6 @@ class HH(Engine):
 
     def __len__(self):
         return len(self.response_list)
-    # 'user-agent': ua.random
 
 
 class SuperJob(Engine):
@@ -115,22 +112,9 @@ class Vacancy:
     def salary(self, value):
         self.__salary = value
 
-    def get_vacancy(self) -> dict:
-        """
-        Создает и возвращает словарь с данными о вакансии (зарплата только в формате int).
-        """
-        vacancy_dict = {
-            'Позиция': self.__name,
-            'Ссылка': self.__url,
-            'Описание': self.__description,
-            'Заработная плата': self._refactor_salary()
-        }
-
-        return vacancy_dict
-
     def __repr__(self) -> str:
         """
-        Создает и возвращает строку, содержащую данные о вакансии.
+        Возвращает строку, содержащую данные о вакансии.
         """
 
         return f'Позиция: {self.__name}:\nОписание: {self.__description}\nЗаработная плата от: {self.__salary}\nСсылка на вакансию: {self.__url}\n\n'
@@ -147,8 +131,8 @@ class CountMixin:
         with open('../data/' + self.data_file_name, 'r', encoding='utf-8') as file:
             data = json.load(file)
 
-        print(len(data))
         return len(data)
+
 
 class HHVacancy(Vacancy, CountMixin):  # add counter mixin
     """ HeadHunter Vacancy """

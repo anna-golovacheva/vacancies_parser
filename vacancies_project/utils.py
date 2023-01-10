@@ -5,6 +5,8 @@ import pandas as pd
 from vacancies_project.classes import Connector
 
 FILE_PATH = '../data/all_data.json'
+
+
 def refactor_salary(s) -> int:
     """
     Приводит данные о зарплате к одному виду - числовому представалению.
