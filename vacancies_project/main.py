@@ -9,7 +9,6 @@ def main():
 
         hh_vac = HHVacancy(None, None, None, None)
         file_1 = hh_vac.get_data(user_key)
-        dff = hh_vac.get_count_of_vacancy
 
         sj_vac = SJVacancy(None, None, None, None)
         file_2 = sj_vac.get_data(user_key)
