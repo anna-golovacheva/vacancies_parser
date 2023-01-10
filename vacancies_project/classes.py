@@ -1,12 +1,9 @@
+import json
 import requests
-
 from bs4 import BeautifulSoup
-
-import re
-
 from abc import ABC, abstractmethod
-
-import fake_useragent
+import os
+import re
 
 
 class Engine(ABC):
@@ -14,26 +11,33 @@ class Engine(ABC):
     def get_request(self, keyword: str):
         pass
 
+    @staticmethod
+    def get_connector(file_name):
+        """ Возвращает экземпляр класса Connector """
+        connector = Connector(file_name)
+        return connector
+
 
 class HH(Engine):
     def __init__(self):
         self.response_list = []
         self.max_range = 0
+
     def get_request(self, key: str) -> list:
         """
         Выгружает данные обо всех подходящих вакансиях с сайта HeadHunter.
         """
         key = key.capitalize()
-
-        # ua = fake_useragent.UserAgent()
         url = 'https://api.hh.ru/vacancies'
+
         total_num_response = requests.get(url, {'text': key, 'area': 113})
         total_num = total_num_response.json()['found']
         per_page = 100
-        if total_num < 500:
+        if total_num <= 1000:
             self.max_range = total_num // per_page + 1
         else:
-            self.max_range = 9
+            self.max_range = 11
+
         for i in range(self.max_range):
             par = {'page': i, 'per_page': per_page, 'text': key, 'area': '113'}
             response = requests.get(url, params=par)
@@ -45,10 +49,7 @@ class HH(Engine):
         return len(self.response_list)
 
 
-    # 'user-agent': ua.random
-
-
-class Superjob(Engine):
+class SuperJob(Engine):
     def get_request(self, key: str) -> list:
         """
         Выгружает данные обо всех подходящих вакансиях с сайта SuperJob.
@@ -68,42 +69,153 @@ class Superjob(Engine):
 
             raw_items_list += soup_items
 
-        print(len(raw_items_list))
-
         return raw_items_list
 
 
 class Vacancy:
-    def __init__(self):
-        self.name = None
-        self.url = None
-        self.description = None
-        self.salary = None
+    __slots__ = ('__name', '__url', '__description', '__salary', '__refactored_salary')
 
-    def get_data_hh(self, WebsiteClass, key: str) -> list:
-        hh = WebsiteClass()
-        super_list = hh.get_request(key)
+    def __init__(self, name, url, description, salary):
+        self.__name = name
+        self.__url = url
+        self.__description = description
+        self.__salary = salary
+        self.__refactored_salary = 0
+
+    @property
+    def name(self):
+        return self.__name
+
+    @name.setter
+    def name(self, value):
+        self.__name = value
+
+    @property
+    def url(self):
+        return self.__url
+
+    @url.setter
+    def url(self, value):
+        self.__url = value
+
+    @property
+    def description(self):
+        return self.__description
+
+    @description.setter
+    def description(self, value):
+        self.__description = value
+
+    @property
+    def salary(self):
+        return self.__salary
+
+    @salary.setter
+    def salary(self, value):
+        self.__salary = value
+
+    def refactor_salary(self):
+        """
+        Приводит данные о зарплате к одному виду - числовому представлению.
+        """
+        money = self.__salary
+        if isinstance(money, int):
+            self.__refactored_salary = self.__salary
+
+        elif isinstance(money, str) and all(word not in money for word in ['По договорённости', 'не указано', 'None']):
+            regexp = re.compile(r'(^\d{4,6})|[а-я]{2}(\d{4,6})')
+            m = regexp.match(money)
+            if m.group(1):
+                self.__refactored_salary = int(m.group(1))
+            elif m.group(2):
+                self.__refactored_salary = int(m.group(2))
+
+    def __lt__(self, other):
+        return self.__refactored_salary < other
+
+    def __gt__(self, other):
+        return self.__refactored_salary > other
+
+    def __eq__(self, other):
+        return self.__refactored_salary == other
+
+    def __ne__(self, other):
+        return self.__refactored_salary != other
+
+    def __repr__(self) -> str:
+        """
+        Возвращает строку, содержащую данные о вакансии.
+        """
+
+        return f'Позиция: {self.__name}:\nОписание: {self.__description}\nЗаработная плата от: {self.__salary}\nСсылка на вакансию: {self.__url}\n\n'
+
+
+class CountMixin:
+
+    @property
+    def get_count_of_vacancy(self):
+        """
+        Вернуть количество вакансий от текущего сервиса.
+        Получать количество необходимо динамически из файла.
+        """
+        with open('../data/' + self.data_file_name, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+
+        return len(data)
+
+
+class HHVacancy(Vacancy, CountMixin):  # add counter mixin
+    """ HeadHunter Vacancy """
+    __slots__ = ('data_file_name')
+
+    def __init__(self, __name, __url, __description, __salary):
+        self.data_file_name = 'data_hh.json'
+        super().__init__(__name, __url, __description, __salary)
+
+    def __str__(self):
+        return f'HH: {self.__name}, зарплата: {self.__salary} руб/мес'
+
+    def get_data(self, key: str) -> None:
+        hh = HH()
+        data_list = hh.get_request(key)
         list_for_vacancies = []
         for i in range(len(hh)):
-            name_v = super_list[i]['name']
-            url_v = super_list[i]['alternate_url']
-            description_v_raw = f'{super_list[i]["snippet"]["requirement"] }' + f'{super_list[i]["snippet"]["responsibility"]}'
+            self.__name = data_list[i]['name']
+            self.__url = data_list[i]['alternate_url']
+            description_v_raw = f'{data_list[i]["snippet"]["requirement"] }' + f'{data_list[i]["snippet"]["responsibility"]}'
             description_v_r = description_v_raw.replace('<highlighttext>Python</highlighttext>', '')
-            description_v = description_v_r.replace('<highlighttext>python</highlighttext>', '')
+            self.__description = description_v_r.replace('<highlighttext>python</highlighttext>', '')
             try:
-                salary_v = super_list[i]['salary']['from']
+                self.__salary = data_list[i]['salary']['from']
             except TypeError:
-                salary_v = 'не указано'
-            list_for_vacancies.append([name_v, url_v, description_v, salary_v])
-        return list_for_vacancies
+                self.__salary = 'не указано'
 
-    def get_data_sj(self, WebsiteClass, key: str) -> list:
-        sj = WebsiteClass()
-        list_of_everything = sj.get_request(key)
+            list_for_vacancies.append({'name': self.__name, 'url': self.__url, 'description': self.__description, 'salary': self.__salary})
+
+        connector = hh.get_connector(self.data_file_name)
+        connector.insert(list_for_vacancies)
+
+        return connector.data_file
+
+
+class SJVacancy(Vacancy, CountMixin):  # add counter mixin
+    """ SuperJob Vacancy """
+    __slots__ = ('data_file_name')
+
+    def __init__(self, __name, __url, __description, __salary):
+        self.data_file_name = 'data_sj.json'
+        super().__init__(__name, __url, __description, __salary)
+
+    def __str__(self):
+        return f'SJ: {self.__name}, зарплата: {self.__salary} руб/мес'
+
+    def get_data(self, key: str):
+        sj = SuperJob()
+        data_list = sj.get_request(key)
 
         list_for_vacancies = []
-        for data in list_of_everything:
-            basic_path_url = ''
+        for data in data_list:
+            basic_path_description = ''
             basic_path_others = ''
             salary_v_r = ''
             is_ad = False
@@ -125,50 +237,97 @@ class Vacancy:
                 if is_ad:
                     continue
 
-                salary_v = salary_v_r.replace('\xa0', '')
-                name_v = basic_path_others.contents[0].text
-                description_v = basic_path_description.contents[2].text
-                url_v = 'https://russia.superjob.ru' + basic_path_others.contents[0].contents[0].contents[0].contents[0].attrs['href']
-                list_for_vacancies.append([name_v, url_v, description_v, salary_v])
+                self.__salary = salary_v_r.replace('\xa0', '')
+                self.__name = basic_path_others.contents[0].text
+                self.__description = basic_path_description.contents[2].text
+                self.__url = 'https://russia.superjob.ru' + basic_path_others.contents[0].contents[0].contents[0].contents[0].attrs['href']
+                list_for_vacancies.append({'name': self.__name, 'url': self.__url, 'description': self.__description, 'salary': self.__salary})
 
-        return list_for_vacancies
+        connector = sj.get_connector('data_sj.json')
+        connector.insert(list_for_vacancies)
 
-    def set_data(self, list_of_params: list) -> None:
-        self.name, self.url, self.description, self.salary = list_of_params[0], list_of_params[1], list_of_params[2], list_of_params[3]
+        return connector.data_file
 
-    def _refactor_salary(self) -> int:
-        """
-        Приводит данные о зарплате к одному виду - числовому представалению.
-        """
-        money = self.salary
-        if type(money) is int:
-            return money
-        elif type(money) is str and 'По договорённости' not in money and 'не указано' not in money and 'None' not in money:
-            regexp = re.compile(r'(^\d{4,6})|[а-я]{2}(\d{4,6})')
-            m = regexp.match(money)
-            if m.group(1):
-                return int(m.group(1))
-            elif m.group(2):
-                return int(m.group(2))
+
+class Connector:
+    """
+    Класс-коннектор к файлу, обязательно файл должен быть в json формате
+    не забывать проверять целостность данных, что файл с данными не подвергся
+    внешней деградации
+    """
+    __data_file = None
+
+    def __init__(self, df):
+        self.__data_file = '../data/' + df
+        self.__connect()
+
+    @property
+    def data_file(self):
+        return self.__data_file
+
+    @data_file.setter
+    def data_file(self, value):
+        if value[-5:-1] == '.json':
+            self.__data_file = '../data/' + value
         else:
-            return 0
+            self.__data_file = '../data/' + value + '.json'
+        self.__connect()
 
-    def get_vacancy(self) -> dict:
+    def __connect(self):
         """
-        Создает и возвращает словарь с данными о вакансии (зарплата только в формате int).
+        Проверка на существование файла с данными и
+        создание его при необходимости
+        Также проверить на деградацию и возбудить исключение
+        если файл потерял актуальность в структуре данных
         """
-        vacancy_dict = {
-            'Позиция': self.name,
-            'Ссылка': self.url,
-            'Описание': self.description,
-            'Заработная плата': self._refactor_salary()
-        }
+        if os.path.isfile(self.__data_file):
+            try:
+                with open(self.__data_file, encoding='utf-8') as file:
+                    value_from_file = json.load(file)[0]['name']
+                capitalized_check = value_from_file.capitalize()
+            except AttributeError:
+                raise AttributeError('файл поврежден')
+        else:
+            new_file = open(self.__data_file, 'x')
+            new_file.close()
 
-        return vacancy_dict
-
-    def __repr__(self) -> str:
+    def insert(self, data):
         """
-        Создает и возвращает строку, содержащую данные о вакансии.
+        Запись данных в файл с сохранением структуры и исходных данных
         """
+        with open(self.__data_file, 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False)
 
-        return f'Позиция: {self.name}:\nОписание: {self.description}\nЗаработная плата от: {self.salary}\nСсылка на вакансию: {self.url}\n\n'
+    def select(self, query, strong=True):
+        """
+        Выбор данных из файла с применением фильтрации
+        query содержит словарь, в котором ключ - это поле для
+        фильтрации, а значение - это искомое значение, например:
+        {'price': 1000}, должно отфильтровать данные по полю price
+        и вернуть все строки, в которых цена 1000
+        """
+        with open(self.__data_file, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        if query:
+            key, value = list(query.items())[0]
+            if strong:
+                selected_data = [data_item for data_item in data if data_item[key] == value]
+            else:
+                selected_data = [data_item for data_item in data if value in data_item[key]]
+            return selected_data
+        return data
+
+    def delete(self, query):
+        """
+        Удаление записей из файла, которые соответствуют запросу,
+        как в методе select. Если в query передан пустой словарь, то
+        функция удаления не сработает
+        """
+        if query:
+            with open(self.__data_file, 'r', encoding='utf-8') as file_r:
+                data = json.load(file_r)
+
+            key, value = query.items()[0]
+            saved_data = [data_item for data_item in data if data_item[key] != value]
+            with open(self.__data_file, 'w', encoding='utf-8') as file_w:
+                json.dump(saved_data, file_w)

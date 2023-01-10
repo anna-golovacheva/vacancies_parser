@@ -1,42 +1,56 @@
 from utils import *
-from vacancies_project.classes import HH, Superjob, Vacancy
+from vacancies_project.classes import SJVacancy, HHVacancy
 
 
 def main():
     while True:
-        user_key = input('Привет! Введи ключевое слово на английском для поиска вакансий (например, python или java): >> ')
+        user_key = input('Привет! Введите ключевое слово на английском языке для поиска вакансий (например, python или java): >> ')
         print(f'Ищем вакансии по ключевому слову "{user_key}" на сайтах HH и SuperJob. Нужно немного подождать.')
-        vacancy = Vacancy()
-        list_of_vacancies_hh = vacancy.get_data_hh(HH, user_key)
 
-        list_of_vacancies_to_upload = []
-        list_of_vacancies_to_analyze = []
+        file_1 = collect_data(HHVacancy, user_key)
+        file_2 = collect_data(SJVacancy, user_key)
 
-        list_up_hh, list_an_hh = make_lists_of_vacancies(list_of_vacancies_hh, vacancy)
-        list_of_vacancies_to_upload.extend(list_up_hh)
-        list_of_vacancies_to_analyze.extend(list_an_hh)
-
-        list_of_vacancies_sj = vacancy.get_data_sj(Superjob, user_key)
-        list_up_sj, list_an_sj = make_lists_of_vacancies(list_of_vacancies_sj, vacancy)
-        list_of_vacancies_to_upload.extend(list_up_sj)
-        list_of_vacancies_to_analyze.extend(list_an_sj)
+        all_data = upload_data_to_file(file_1, file_2)
 
         print('Нашли!')
 
-        user_choice = input('Выбери действие и введи соответствующую цифру:\n1 - чтобы загрузить в файл 1000 вакансий по выбранному ключевому слову.\n2 - чтобы вывести топ вакансий по зарплатам.\n3 - чтобы завершить работу программы. >> ')
+        user_choice = input('Выберите действие и введи соответствующую цифру:\n1 - чтобы загрузить в файл 1000 вакансий по выбранному ключевому слову.\n2 - чтобы загрузить в файл топ вакансий по зарплатам.\n3 - чтобы загрузить в файл вакансии по выбранному ключевому слову с дополнительным параметром.\n4 - завершить работу программы. >> ')
         if user_choice == '1':
-            upload_data_to_file(list_of_vacancies_to_upload)
+            print(upload_1000(all_data))
 
         elif user_choice == '2':
             num = int(input('Введите необходимое число вакансий в списке: >> '))
-            get_top(list_of_vacancies_to_analyze, num)
+            sorted_data = sorting(all_data)
+            print(get_top(sorted_data, num))
 
         elif user_choice == '3':
+            num_key = input('Введите параметр, который хотите задать: 1 - название, 2 - описание или 3 - зарплата. >> ')
+            if num_key == '1':
+                key = 'name'
+                value = input('Введите ключевое слово, которое должно содержаться в названии вакансии на сайте. >> ')
+                print(select_data_from_all_data(all_data, {key: value}, strong=False))
+            elif num_key == '2':
+                key = 'description'
+                value = input('Введите ключевое слово, которое должно содержаться в описании вакансии на сайте. >> ')
+                print(select_data_from_all_data(all_data, {key: value}, strong=False))
+            elif num_key == '3':
+                key = 'salary'
+                value = input('Введите число. >> ')
+                try:
+                    int_value = int(value)
+                except ValueError:
+                    print('Необходимо ввести число.')
+                else:
+                    print(select_data_from_all_data(all_data, {key: int_value}, strong=True))
+            else:
+                print('По такому параметру поиск невозможен.')
+
+        elif user_choice == '4':
             print('Пока!')
             break
 
         else:
-            print('Кажется, ты ввел что-то другое. Попробуй еще раз.')
+            print('Кажется, вы ввели что-то другое. Попробуйте еще раз.')
 
 
 if __name__ == '__main__':
