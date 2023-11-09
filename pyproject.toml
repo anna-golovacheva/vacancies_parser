@@ -6,10 +6,11 @@ authors = ["anna-golovacheva <anna.ch.ollala@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10"
 beautifulsoup4 = "^4.11.1"
 fake-useragent = "^1.1.1"
 pandas = "^1.5.2"
+requests = "^2.31.0"
+lxml = "^4.9.3"
 
 
 [build-system]
